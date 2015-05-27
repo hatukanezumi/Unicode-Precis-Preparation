@@ -1,0 +1,78 @@
+
+=encoding utf-8
+
+=head1 NAME
+
+Unicode::Precis::Preparation~[ja] - RFC 7564 PRECISフレームワーク - 準備
+
+=head1 SYNOPSIS
+
+  use Unicode::Precis::Preparation qw(prepare);
+  $result = prepare($string, 'IdentifierClass');
+
+=head1 DESCRIPTION
+
+L<Unicode::Precis::Preparation>は、PRECIS
+フレームワークに従ってユニコード文字列またはUTF-8のバイト文字列の準備を行う。
+
+=head2 Function
+
+=over
+
+=item prepare ( $string, [ $stringclass ] )
+
+文字列が指定した文字列クラスに適合するか検査する。
+
+Parameters:
+
+=over
+
+=item $string
+
+検査する文字列。ユニコード文字列か、UTF-8のバイト文字列。
+
+バイト文字列は、ユニコードへアップグレードされることなく
+UTF-8列として扱われることに注意。
+
+=item $stringclass
+
+C<"ValidUTF8"> (初期値)、C<"FreeFormClass">、C<"IdentifierClass"> のいずれか。
+
+=back
+
+Returns:
+
+指定した文字列クラスに適合すれば真値。そうでなければ偽値。
+
+=back
+
+=head2 EXPORT
+
+初期状態ではなにもエクスポートしない。
+C<:all> タグで prepare() をエクスポートする。
+
+=head1 SEE ALSO
+
+L<Unicode::Precis> - coming late.
+
+RFC 7564 I<PRECIS Framework: Preparation, Enforcement, and Comparison of
+Internationalized Strings in Application Protocols>.
+L<https://tools.ietf.org/html/rfc7564>.
+
+=head1 AUTHOR
+
+Hatuka*nezumi - IKEDA Soji, E<lt>hatuka@nezumi.nuE<gt>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2015 by Hatuka*nezumi - IKEDA Soji
+
+This library is free software; you can redistribute it and/or modify it
+under the same terms as Perl. For more details, see the full text of
+the licenses at <http://dev.perl.org/licenses/>.
+
+This program is distributed in the hope that it will be
+useful, but without any warranty; without even the implied
+warranty of merchantability or fitness for a particular purpose.
+
+=cut

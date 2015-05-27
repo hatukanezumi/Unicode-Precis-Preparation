@@ -1,0 +1,14 @@
+Changes
+data/makefile
+data/precis_preparation.c.in
+data/precis_preparation.pl
+Makefile.PL
+MANIFEST
+ppport.h
+precis_preparation.c
+precis_preparation.h
+Preparation.xs
+README
+t/Unicode-Precis-Preparation.t
+lib/POD2/JA/Unicode/Precis/Preparation.pod
+lib/Unicode/Precis/Preparation.pm
