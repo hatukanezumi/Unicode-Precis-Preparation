@@ -1,6 +1,5 @@
 Changes
 data/makefile
-data/precis_preparation.c.in
 data/precis_preparation.pl
 Makefile.PL
 MANIFEST

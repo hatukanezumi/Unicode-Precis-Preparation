@@ -23,7 +23,7 @@ WriteMakefile(
     AUTHOR        => 'Hatuka*nezumi - IKEDA Soji <hatuka@nezumi.nu>',
     LICENSE       => 'perl',
     LIBS          => [''],
-    DEFINE        => '-Wall',
+    DEFINE        => '',
     INC           => '-I.',
     OBJECT        => '$(O_FILES)',
     META_MERGE    => {

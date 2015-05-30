@@ -4,296 +4,328 @@ use strict;
 use warnings;
 
 use constant PROP_BLKWIDTH => 6;
-use constant CTX_BLKWIDTH => 7;
+use constant CTX_BLKWIDTH  => 7;
 
 my $precis_table  = shift;
 my $UnicodeData   = shift;
 my $ArabicShaping = shift;
 my $Scripts       = shift;
+my $source_file   = shift;
+
+open my $debugfh, '>', 'propmaps.txt' if $ENV{DEBUG};
 
 my ($prop_index, $prop_array) = build_prop_map();
-my ($ctx_index, $ctx_array) = build_ctx_map();
+my ($ctx_index,  $ctx_array)  = build_ctx_map();
 
-printf do { local @ARGV = qw(precis_preparation.c.in); local $/; <> },
-    $prop_index, $prop_array, PROP_BLKWIDTH(), PROP_BLKWIDTH(),
-    $ctx_index, $ctx_array, CTX_BLKWIDTH(), CTX_BLKWIDTH();
+my $source = do { local @ARGV = $source_file; local $/; <> };
+$source =~ s{(/[*] begin widths [*]/).*(/[*] end widths [*]/)}
+    {sprintf "%s\n#define PROP_BLKWIDTH (%d)\n#define CTX_BLKWIDTH (%d)\n%s",
+	$1, PROP_BLKWIDTH(), CTX_BLKWIDTH(), $2}es;
+$source =~
+    s/\b(precis_prop_index[[][]]\s*=\s*[{]).*?([}])/$1\n$prop_index\n$2/s;
+$source =~
+    s/\b(precis_prop_array[[][]]\s*=\s*[{]).*?([}])/$1\n$prop_array\n$2/s;
+$source =~
+    s/\b(precis_ctx_index[[][]]\s*=\s*[{]).*?([}])/$1\n$ctx_index\n$2/s;
+$source =~
+    s/\b(precis_ctx_array[[][]]\s*=\s*[{]).*?([}])/$1\n$ctx_array\n$2/s;
 
+unlink "$source_file.old";
+rename $source_file, "$source_file.old" or die $!;
+open my $fh, '>', $source_file or die $!;
+print $fh $source;
+close $fh;
 
 sub build_prop_map {
 
-my @PROPS = ();
-my $fh;
+    my @PROPS = ();
+    my $fh;
 
-open $fh, '<', $precis_table or die $!;
+    open $fh, '<', $precis_table or die $!;
 
-$_ = <$fh>;
-chomp $_;
-my @fields = split /,/, $_;
-die unless @fields;
-
-while (<$fh>) {
+    $_ = <$fh>;
     chomp $_;
-    @_ = split /,/, $_;
-    my %fields = map { (lc $_ => shift @_) } @fields;
+    my @fields = split /,/, $_;
+    die unless @fields;
 
-    my ($begin, $end) = split /-/, $fields{codepoint}, 2;
-    $end ||= $begin;
+    while (<$fh>) {
+        chomp $_;
+        @_ = split /,/, $_;
+        my %fields = map { (lc $_ => shift @_) } @fields;
 
-    my $property = $fields{property};
-    $property =~ s/\A(ID_DIS) or FREE_PVAL\z/$1/;
+        my ($begin, $end) = split /-/, $fields{codepoint}, 2;
+        $end ||= $begin;
 
-    foreach my $c (hex("0x$begin") .. hex("0x$end")) {
-        next unless $c < 0x40000;
-        $PROPS[$c] = $property;
-    }
-}
-close $fh;
+        my $property = $fields{property};
+        $property =~ s/\A(ID_DIS) or FREE_PVAL\z/$1/;
 
-## Debug
-#for (my $c = 0; $c < 0x040000; $c++) {
-#    next unless defined $PROPS[$c];
-#    printf STDERR "%04X\t%s\n", $c, $PROPS[$c];
-#}
-
-# Construct compact array.
-
-my $blklen = 1 << PROP_BLKWIDTH();
-
-my @C_ARY = ();
-my @C_IDX = ();
-for (my $idx = 0; $idx < 0x40000; $idx += $blklen) {
-    my @BLK = ();
-    for (my $bi = 0; $bi < $blklen; $bi++) {
-        my $c = $idx + $bi;
-        $BLK[$bi] = $PROPS[$c];
-    }
-    my ($ci, $bi) = (0, 0);
-C_ARY:
-    for ($ci = 0; $ci <= $#C_ARY; $ci++) {
-        for ($bi = 0; $bi < $blklen; $bi++) {
-            last C_ARY if $#C_ARY < $ci + $bi;
-            last unless $BLK[$bi] eq $C_ARY[$ci + $bi];
-        }
-        last C_ARY if $bi == $blklen;
-    }
-    push @C_IDX, $ci;
-    if ($bi < $blklen) {
-        for (; $bi < $blklen; $bi++) {
-            push @C_ARY, $BLK[$bi];
+        foreach my $c (hex("0x$begin") .. hex("0x$end")) {
+            next unless $c < 0x40000;
+            $PROPS[$c] = $property;
         }
     }
-    printf STDERR "U+%04X..U+%04X: %d..%d / %d      \r", $idx,
-        $idx + ($blklen) - 1, $ci, $ci + ($blklen) - 1, scalar @C_ARY;
-}
-print STDERR "\n";
+    close $fh;
 
-# Build compact array index.
-
-my $index = '';
-my $line  = '';
-foreach my $ci (@C_IDX) {
-    if (74 < 4 + length($line) + length(", $ci")) {
-        $index .= ",\n" if length $index;
-        $index .= "    $line";
-        $line = '';
+    # Debug
+    if ($debugfh) {
+        for (my $c = 0; $c < 0x040000; $c++) {
+            next unless defined $PROPS[$c];
+            printf $debugfh "%04X\t%s\n", $c, $PROPS[$c];
+        }
     }
-    $line .= ", " if length $line;
-    $line .= "$ci";
-}
-$index .= ",\n" if length $index;
-$index .= "    $line";
 
-# Build compact array.
+    # Construct compact array.
 
-my $array = '';
-$line = '';
-foreach my $b (@C_ARY) {
-    die "property unknown\n" unless defined $b;
-    my $citem = 'PRECIS_' . $b;
-    if (74 < 4 + length($line) + length(", $citem")) {
-        $array .= ",\n" if length $array;
-        $array .= "    $line";
-        $line = '';
+    my $blklen = 1 << PROP_BLKWIDTH();
+
+    my @C_ARY = ();
+    my @C_IDX = ();
+    for (my $idx = 0; $idx < 0x40000; $idx += $blklen) {
+        my @BLK = ();
+        for (my $bi = 0; $bi < $blklen; $bi++) {
+            my $c = $idx + $bi;
+            $BLK[$bi] = $PROPS[$c];
+        }
+        my ($ci, $bi) = (0, 0);
+    C_ARY:
+        for ($ci = 0; $ci <= $#C_ARY; $ci++) {
+            for ($bi = 0; $bi < $blklen; $bi++) {
+                last C_ARY if $#C_ARY < $ci + $bi;
+                last unless $BLK[$bi] eq $C_ARY[$ci + $bi];
+            }
+            last C_ARY if $bi == $blklen;
+        }
+        push @C_IDX, $ci;
+        if ($bi < $blklen) {
+            for (; $bi < $blklen; $bi++) {
+                push @C_ARY, $BLK[$bi];
+            }
+        }
+        printf STDERR "U+%04X..U+%04X: %d..%d / %d      \r", $idx,
+            $idx + ($blklen) - 1, $ci, $ci + ($blklen) - 1, scalar @C_ARY;
     }
-    $line .= ", " if length $line;
-    $line .= $citem;
-}
-$array .= ",\n" if length $array;
-$array .= "    $line";
+    print STDERR "\n";
 
-# Statistics.
+    # Build compact array index.
 
-printf STDERR
-    "%d codepoints (in BMP, SMP, SIP and TIP), %d entries\n",
-    scalar(grep $_, @PROPS), scalar(@C_ARY);
-die "Too many entries to work with unsigned 16-bit short integer: "
-    . scalar(@C_ARY) . "\n"
-    if (1 << 16) <= scalar(@C_ARY);
-warn "Too many entries to work with signed 16-bit pointer: "
-    . scalar(@C_ARY) . "\n"
-    if (1 << 15) <= scalar(@C_ARY);
+    my $index = '';
+    my $line  = '';
+    foreach my $ci (@C_IDX) {
+        if (74 < 4 + length($line) + length(", $ci")) {
+            $index .= ",\n" if length $index;
+            $index .= "    $line";
+            $line = '';
+        }
+        $line .= ", " if length $line;
+        $line .= "$ci";
+    }
+    $index .= ",\n" if length $index;
+    $index .= "    $line";
+
+    # Build compact array.
+
+    my $array = '';
+    $line = '';
+    foreach my $b (@C_ARY) {
+        die "property unknown\n" unless defined $b;
+        my $citem = 'PRECIS_' . $b;
+        if (74 < 4 + length($line) + length(", $citem")) {
+            $array .= ",\n" if length $array;
+            $array .= "    $line";
+            $line = '';
+        }
+        $line .= ", " if length $line;
+        $line .= $citem;
+    }
+    $array .= ",\n" if length $array;
+    $array .= "    $line";
+
+    # Statistics.
+
+    printf STDERR
+        "%d codepoints (in BMP, SMP, SIP and TIP), %d entries\n",
+        scalar(grep $_, @PROPS), scalar(@C_ARY);
+    die "Too many entries to work with unsigned 16-bit short integer: "
+        . scalar(@C_ARY) . "\n"
+        if (1 << 16) <= scalar(@C_ARY);
+    warn "Too many entries to work with signed 16-bit pointer: "
+        . scalar(@C_ARY) . "\n"
+        if (1 << 15) <= scalar(@C_ARY);
 
     return ($index, $array);
 }
 
 sub build_ctx_map {
-   no warnings;
+    my @PROPS = ();
+    my $fh;
 
-my @PROPS = ();
-my $fh;
+    open $fh, '<', $UnicodeData or die $!;
+    while (<$fh>) {
+        chomp $_;
+        @_ = split /;/, $_;
 
-open $fh, '<', $UnicodeData or die $!;
-while (<$fh>) {
-    chomp $_;
-    @_ = split /;/, $_;
+        my ($begin, $end) = split /\.\./, $_[0], 2;
+        $end ||= $begin;
 
-    my ($begin, $end) = split /\.\./, $_[0], 2;
-    $end ||= $begin;
+        my $property = $_[3];
 
-    my $property = $_[3];
+        foreach my $c (hex("0x$begin") .. hex("0x$end")) {
+            next unless $c < 0x40000;
+            next unless defined $property and $property eq '9';
 
-    foreach my $c (hex("0x$begin") .. hex("0x$end")) {
-        next unless $c < 0x40000;
-        next unless defined $property and $property eq '9';
-
-        die sprintf "Duplicated: U+%04X = %s : CCC_VIRAMA", $c, $PROPS[$c]
-            if defined $PROPS[$c];
-        $PROPS[$c] = "CCC_VIRAMA";
-    }
-}
-close $fh;
-
-open $fh, '<', $ArabicShaping or die $!;
-while (<$fh>) {
-    chomp $_;
-    @_ = split /; /, $_;
-
-    my ($begin, $end) = split /\.\./, $_[0], 2;
-    $end ||= $begin;
-
-    my $property = $_[2];
-
-    foreach my $c (hex("0x$begin") .. hex("0x$end")) {
-        next unless $c < 0x40000;
-        next unless defined $property and $property =~ /\A[DLTR]\z/;
-
-        die sprintf "Duplicated: U+%04X = %s : JT_%s", $c, $PROPS[$c],
-            $property
-            if defined $PROPS[$c];
-        $PROPS[$c] = "JT_$property";
-    }
-
-}
-close $fh;
-
-open $fh, '<', $Scripts or die $!;
-while (<$fh>) {
-    chomp $_;
-    s/\s+#.*$//;
-    @_ = split /\s*;\s*/, $_;
-
-    my ($begin, $end) = split /\.\./, $_[0], 2;
-    $end ||= $begin;
-
-    my $property = $_[1];
-
-    foreach my $c (hex("0x$begin") .. hex("0x$end")) {
-        next unless $c < 0x40000;
-        next
-            unless defined $property
-                and $property =~ /\A(Greek|Han|Hebrew|Hiragana|Katakana)\z/;
-
-        die sprintf "Duplicated: U+%04X = %s : SC_%s", $c, $PROPS[$c],
-            $property
-            if defined $PROPS[$c];
-        $PROPS[$c] = "SC_$property";
-    }
-
-}
-close $fh;
-
-# Construct compact array.
-
-my $blklen = 1 << CTX_BLKWIDTH();
-
-my @C_ARY = ();
-my @C_IDX = ();
-for (my $idx = 0; $idx < 0x40000; $idx += $blklen) {
-    my @BLK = ();
-    for (my $bi = 0; $bi < $blklen; $bi++) {
-        my $c = $idx + $bi;
-        $BLK[$bi] = $PROPS[$c];
-    }
-    my ($ci, $bi) = (0, 0);
-C_ARY:
-    for ($ci = 0; $ci <= $#C_ARY; $ci++) {
-        for ($bi = 0; $bi < $blklen; $bi++) {
-            last C_ARY if $#C_ARY < $ci + $bi;
-            last unless $BLK[$bi] eq $C_ARY[$ci + $bi];
-        }
-        last C_ARY if $bi == $blklen;
-    }
-    push @C_IDX, $ci;
-    if ($bi < $blklen) {
-        for (; $bi < $blklen; $bi++) {
-            push @C_ARY, $BLK[$bi];
+            die sprintf "Duplicated: U+%04X = %s : CCC_VIRAMA", $c, $PROPS[$c]
+                if defined $PROPS[$c];
+            $PROPS[$c] = "CCC_VIRAMA";
         }
     }
-    printf STDERR "U+%04X..U+%04X: %d..%d / %d      \r", $idx,
-        $idx + ($blklen) - 1, $ci, $ci + ($blklen) - 1, scalar @C_ARY;
-}
-print STDERR "\n";
+    close $fh;
 
-# Build compact array index.
+    open $fh, '<', $ArabicShaping or die $!;
+    while (<$fh>) {
+        chomp $_;
+        s/^#.*//;
+        next unless /\S/;
 
-my $index = '';
-my $line  = '';
-foreach my $ci (@C_IDX) {
-    if (74 < 4 + length($line) + length(", $ci")) {
-        $index .= ",\n" if length $index;
-        $index .= "    $line";
-        $line = '';
+        @_ = split /; /, $_;
+
+        my ($begin, $end) = split /\.\./, $_[0], 2;
+        $end ||= $begin;
+
+        my $property = $_[2];
+
+        foreach my $c (hex("0x$begin") .. hex("0x$end")) {
+            next unless $c < 0x40000;
+            next unless defined $property and $property =~ /\A[DLTR]\z/;
+
+            die sprintf "Duplicated: U+%04X = %s : JT_%s", $c, $PROPS[$c],
+                $property
+                if defined $PROPS[$c];
+            $PROPS[$c] = "JT_$property";
+        }
+
     }
-    $line .= ", " if length $line;
-    $line .= "$ci";
-}
-$index .= ",\n" if length $index;
-$index .= "    $line";
+    close $fh;
 
-# Build compact array.
+    open $fh, '<', $Scripts or die $!;
+    while (<$fh>) {
+        chomp $_;
+        s/\s+#.*$//;
+        s/^#.*//;
+        next unless /\S/;
 
-my $array = '';
-$line = '';
-foreach my $b (@C_ARY) {
-    #die "property unknown\n" unless defined $b;
-    my $citem;
-    unless (defined $b) {
-        $citem = '0';
-    } else {
-        $citem = $b;
+        @_ = split /\s*;\s*/, $_;
+
+        my ($begin, $end) = split /\.\./, $_[0], 2;
+        $end ||= $begin;
+
+        my $property = $_[1];
+
+        foreach my $c (hex("0x$begin") .. hex("0x$end")) {
+            next unless $c < 0x40000;
+            next
+                unless defined $property
+                    and $property =~
+                    /\A(Greek|Han|Hebrew|Hiragana|Katakana)\z/;
+
+            die sprintf "Duplicated: U+%04X = %s : SC_%s", $c, $PROPS[$c],
+                $property
+                if defined $PROPS[$c];
+            $PROPS[$c] = "SC_$property";
+        }
+
     }
-    if (74 < 4 + length($line) + length(", $citem")) {
-        $array .= ",\n" if length $array;
-        $array .= "    $line";
-        $line = '';
+    close $fh;
+
+    # Debug
+    if ($debugfh) {
+        for (my $c = 0; $c < 0x040000; $c++) {
+            next unless defined $PROPS[$c];
+            printf $debugfh "%04X\t%s\n", $c, $PROPS[$c];
+        }
     }
-    $line .= ", " if length $line;
-    $line .= $citem;
-}
-$array .= ",\n" if length $array;
-$array .= "    $line";
 
-# Statistics.
+    # Construct compact array.
 
-printf STDERR
-    "%d codepoints (in BMP, SMP, SIP and TIP), %d entries\n",
-    scalar(grep $_, @PROPS), scalar(@C_ARY);
-die "Too many entries to work with unsigned 16-bit short integer: "
-    . scalar(@C_ARY) . "\n"
-    if (1 << 16) <= scalar(@C_ARY);
-warn "Too many entries to work with signed 16-bit pointer: "
-    . scalar(@C_ARY) . "\n"
-    if (1 << 15) <= scalar(@C_ARY);
+    my $blklen = 1 << CTX_BLKWIDTH();
+
+    my @C_ARY = ();
+    my @C_IDX = ();
+    for (my $idx = 0; $idx < 0x40000; $idx += $blklen) {
+        my @BLK = ();
+        for (my $bi = 0; $bi < $blklen; $bi++) {
+            my $c = $idx + $bi;
+            $BLK[$bi] = $PROPS[$c];
+        }
+        my ($ci, $bi) = (0, 0);
+    C_ARY:
+        for ($ci = 0; $ci <= $#C_ARY; $ci++) {
+            for ($bi = 0; $bi < $blklen; $bi++) {
+                last C_ARY if $#C_ARY < $ci + $bi;
+                last unless ($BLK[$bi] || '0') eq ($C_ARY[$ci + $bi] || '0');
+            }
+            last C_ARY if $bi == $blklen;
+        }
+        push @C_IDX, $ci;
+        if ($bi < $blklen) {
+            for (; $bi < $blklen; $bi++) {
+                push @C_ARY, $BLK[$bi];
+            }
+        }
+        printf STDERR "U+%04X..U+%04X: %d..%d / %d      \r", $idx,
+            $idx + ($blklen) - 1, $ci, $ci + ($blklen) - 1, scalar @C_ARY;
+    }
+    print STDERR "\n";
+
+    # Build compact array index.
+
+    my $index = '';
+    my $line  = '';
+    foreach my $ci (@C_IDX) {
+        if (74 < 4 + length($line) + length(", $ci")) {
+            $index .= ",\n" if length $index;
+            $index .= "    $line";
+            $line = '';
+        }
+        $line .= ", " if length $line;
+        $line .= "$ci";
+    }
+    $index .= ",\n" if length $index;
+    $index .= "    $line";
+
+    # Build compact array.
+
+    my $array = '';
+    $line = '';
+    foreach my $b (@C_ARY) {
+        #die "property unknown\n" unless defined $b;
+        my $citem;
+        unless (defined $b) {
+            $citem = '0';
+        } else {
+            $citem = $b;
+        }
+        if (74 < 4 + length($line) + length(", $citem")) {
+            $array .= ",\n" if length $array;
+            $array .= "    $line";
+            $line = '';
+        }
+        $line .= ", " if length $line;
+        $line .= $citem;
+    }
+    $array .= ",\n" if length $array;
+    $array .= "    $line";
+
+    # Statistics.
+
+    printf STDERR
+        "%d codepoints (in BMP, SMP, SIP and TIP), %d entries\n",
+        scalar(grep $_, @PROPS), scalar(@C_ARY);
+    die "Too many entries to work with unsigned 16-bit short integer: "
+        . scalar(@C_ARY) . "\n"
+        if (1 << 16) <= scalar(@C_ARY);
+    warn "Too many entries to work with signed 16-bit pointer: "
+        . scalar(@C_ARY) . "\n"
+        if (1 << 15) <= scalar(@C_ARY);
 
     return ($index, $array);
 }

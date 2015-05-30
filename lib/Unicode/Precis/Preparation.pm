@@ -9,9 +9,12 @@ use warnings;
 
 use base qw(Exporter);
 
-our %EXPORT_TAGS =
-    ('all' => [qw(prepare)], 'internal' => [qw(_lookup_prop _lookup_ctx)]);
-our @EXPORT_OK = (@{$EXPORT_TAGS{'all'}});
+our %EXPORT_TAGS = (
+    'all' =>
+        [qw(prepare UNASSIGNED PVALID ID_DIS CONTEXTJ CONTEXTO DISALLOWED)],
+    'internal' => [qw(_lookup_prop _lookup_ctx)]
+);
+our @EXPORT_OK = (@{$EXPORT_TAGS{'all'}}, @{$EXPORT_TAGS{'internal'}});
 
 our $VERSION = '0.000_01';
 #XXX$VERSION = eval $VERSION;  # see L<perlmodstyle>
