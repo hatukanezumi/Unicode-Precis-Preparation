@@ -1,5 +1,24 @@
 Revision history for Perl extension Unicode::Precis::Preparation.
 
+0.000_02  Sun May 31 2015
+! Changes
+! data/makefile
+- data/precis_preparation.c.in
+! data/precis_preparation.pl
+! lib/POD2/JA/Unicode/Precis/Preparation.pod
+! lib/Unicode/Precis/Preparation.pm
+! Makefile.PL
+! MANIFEST
+! precis_preparation.c
+! precis_preparation.h
+! Preparation.xs
+! README
++ t/00use.t
++ t/03contextualrules.t
+- t/Unicode-Precis-Preparation.t
++ t/pod.t
+  - Initial CPAN upload.
+
 0.000_01  Wed May 27 2015
 + Changes
 + data/makefile

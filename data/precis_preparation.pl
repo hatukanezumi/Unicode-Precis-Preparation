@@ -3,10 +3,12 @@
 use strict;
 use warnings;
 
-use constant PROP_BLKWIDTH => 6;
-use constant CTX_BLKWIDTH  => 7;
+use constant PROP_BLKWIDTH  => 6;
+use constant AGE_BLKWIDTH   => 5;
+use constant XPROP_BLKWIDTH => 7;
 
 my $precis_table  = shift;
+my $DerivedAge    = shift;
 my $UnicodeData   = shift;
 my $ArabicShaping = shift;
 my $Scripts       = shift;
@@ -14,21 +16,36 @@ my $source_file   = shift;
 
 open my $debugfh, '>', 'propmaps.txt' if $ENV{DEBUG};
 
-my ($prop_index, $prop_array) = build_prop_map();
-my ($ctx_index,  $ctx_array)  = build_ctx_map();
+my ($prop_index,  $prop_array)  = build_prop_map();
+my ($age_index,   $age_array)   = build_age_map();
+my ($xprop_index, $xprop_array) = build_xprop_map();
 
 my $source = do { local @ARGV = $source_file; local $/; <> };
-$source =~ s{(/[*] begin widths [*]/).*(/[*] end widths [*]/)}
-    {sprintf "%s\n#define PROP_BLKWIDTH (%d)\n#define CTX_BLKWIDTH (%d)\n%s",
-	$1, PROP_BLKWIDTH(), CTX_BLKWIDTH(), $2}es;
 $source =~
-    s/\b(precis_prop_index[[][]]\s*=\s*[{]).*?([}])/$1\n$prop_index\n$2/s;
+    s/(#define\s+PROP_BLKWIDTH)\b.*/sprintf '%s (%d)', $1, PROP_BLKWIDTH()/e
+    or die;
 $source =~
-    s/\b(precis_prop_array[[][]]\s*=\s*[{]).*?([}])/$1\n$prop_array\n$2/s;
+    s/(#define\s+AGE_BLKWIDTH)\b.*/sprintf '%s (%d)', $1, AGE_BLKWIDTH()/e
+    or die;
 $source =~
-    s/\b(precis_ctx_index[[][]]\s*=\s*[{]).*?([}])/$1\n$ctx_index\n$2/s;
+    s/(#define\s+XPROP_BLKWIDTH)\b.*/sprintf '%s (%d)', $1, XPROP_BLKWIDTH()/e
+    or die;
 $source =~
-    s/\b(precis_ctx_array[[][]]\s*=\s*[{]).*?([}])/$1\n$ctx_array\n$2/s;
+    s/\b(precis_prop_index[[][]]\s*=\s*[{]).*?([}])/$1\n$prop_index\n$2/s
+    or die;
+$source =~
+    s/\b(precis_prop_array[[][]]\s*=\s*[{]).*?([}])/$1\n$prop_array\n$2/s
+    or die;
+$source =~ s/\b(precis_age_index[[][]]\s*=\s*[{]).*?([}])/$1\n$age_index\n$2/s
+    or die;
+$source =~ s/\b(precis_age_array[[][]]\s*=\s*[{]).*?([}])/$1\n$age_array\n$2/s
+    or die;
+$source =~
+    s/\b(precis_xprop_index[[][]]\s*=\s*[{]).*?([}])/$1\n$xprop_index\n$2/s
+    or die;
+$source =~
+    s/\b(precis_xprop_array[[][]]\s*=\s*[{]).*?([}])/$1\n$xprop_array\n$2/s
+    or die;
 
 unlink "$source_file.old";
 rename $source_file, "$source_file.old" or die $!;
@@ -41,7 +58,7 @@ sub build_prop_map {
     my @PROPS = ();
     my $fh;
 
-    open $fh, '<', $precis_table or die $!;
+    open $fh, '<', $precis_table or die "$precis_table: $!";
 
     $_ = <$fh>;
     chomp $_;
@@ -155,11 +172,146 @@ sub build_prop_map {
     return ($index, $array);
 }
 
-sub build_ctx_map {
+sub build_age_map {
     my @PROPS = ();
     my $fh;
 
-    open $fh, '<', $UnicodeData or die $!;
+    open $fh, '<', $DerivedAge or die "$DerivedAge: $!";
+    while (<$fh>) {
+        chomp $_;
+        s/\s+#.*$//;
+        s/^#.*//;
+        next unless /\S/;
+
+        @_ = split /\s*;\s*/, $_;
+
+        my ($begin, $end) = split /\.\./, $_[0], 2;
+        $end ||= $begin;
+
+        my $property = $_[1];
+
+        foreach my $c (hex("0x$begin") .. hex("0x$end")) {
+            next unless $c < 0x40000;
+            next
+                unless defined $property
+                    and $property =~ /\A\d+(\.\d+)*\z/;
+
+            die sprintf "Duplicated: U+%04X = %s : SC_%s", $c, $PROPS[$c],
+                $property
+                if defined $PROPS[$c];
+            my @age = split /\./, $property;
+            $age[1] ||= 0;
+            die sprintf
+                "Value for update version found: %s.  Only <major>.<minor> is acceptable",
+                $property
+                if defined $age[2];
+            # Differences by 2.0 and later were tracked by UC.
+            $PROPS[$c] = sprintf '0x%x%x', @age
+                if 2 <= $age[0];
+        }
+
+    }
+    close $fh;
+
+    # Debug
+    if ($debugfh) {
+        for (my $c = 0; $c < 0x040000; $c++) {
+            next unless defined $PROPS[$c];
+            printf $debugfh "%04X\t%s\n", $c, $PROPS[$c];
+        }
+    }
+
+    # Construct compact array.
+
+    my $blklen = 1 << AGE_BLKWIDTH();
+
+    my @C_ARY = ();
+    my @C_IDX = ();
+    for (my $idx = 0; $idx < 0x40000; $idx += $blklen) {
+        my @BLK = ();
+        for (my $bi = 0; $bi < $blklen; $bi++) {
+            my $c = $idx + $bi;
+            $BLK[$bi] = $PROPS[$c];
+        }
+        my ($ci, $bi) = (0, 0);
+    C_ARY:
+        for ($ci = 0; $ci <= $#C_ARY; $ci++) {
+            for ($bi = 0; $bi < $blklen; $bi++) {
+                last C_ARY if $#C_ARY < $ci + $bi;
+                last unless ($BLK[$bi] || '0') eq ($C_ARY[$ci + $bi] || '0');
+            }
+            last C_ARY if $bi == $blklen;
+        }
+        push @C_IDX, $ci;
+        if ($bi < $blklen) {
+            for (; $bi < $blklen; $bi++) {
+                push @C_ARY, $BLK[$bi];
+            }
+        }
+        printf STDERR "U+%04X..U+%04X: %d..%d / %d      \r", $idx,
+            $idx + ($blklen) - 1, $ci, $ci + ($blklen) - 1, scalar @C_ARY;
+    }
+    print STDERR "\n";
+
+    # Build compact array index.
+
+    my $index = '';
+    my $line  = '';
+    foreach my $ci (@C_IDX) {
+        if (74 < 4 + length($line) + length(", $ci")) {
+            $index .= ",\n" if length $index;
+            $index .= "    $line";
+            $line = '';
+        }
+        $line .= ", " if length $line;
+        $line .= "$ci";
+    }
+    $index .= ",\n" if length $index;
+    $index .= "    $line";
+
+    # Build compact array.
+
+    my $array = '';
+    $line = '';
+    foreach my $b (@C_ARY) {
+        #die "property unknown\n" unless defined $b;
+        my $citem;
+        unless (defined $b) {
+            $citem = '0';
+        } else {
+            $citem = $b;
+        }
+        if (74 < 4 + length($line) + length(", $citem")) {
+            $array .= ",\n" if length $array;
+            $array .= "    $line";
+            $line = '';
+        }
+        $line .= ", " if length $line;
+        $line .= $citem;
+    }
+    $array .= ",\n" if length $array;
+    $array .= "    $line";
+
+    # Statistics.
+
+    printf STDERR
+        "%d codepoints (in BMP, SMP, SIP and TIP), %d entries\n",
+        scalar(grep $_, @PROPS), scalar(@C_ARY);
+    die "Too many entries to work with unsigned 16-bit short integer: "
+        . scalar(@C_ARY) . "\n"
+        if (1 << 16) <= scalar(@C_ARY);
+    warn "Too many entries to work with signed 16-bit pointer: "
+        . scalar(@C_ARY) . "\n"
+        if (1 << 15) <= scalar(@C_ARY);
+
+    return ($index, $array);
+}
+
+sub build_xprop_map {
+    my @PROPS = ();
+    my $fh;
+
+    open $fh, '<', $UnicodeData or die "$UnicodeData: $!";
     while (<$fh>) {
         chomp $_;
         @_ = split /;/, $_;
@@ -180,7 +332,7 @@ sub build_ctx_map {
     }
     close $fh;
 
-    open $fh, '<', $ArabicShaping or die $!;
+    open $fh, '<', $ArabicShaping or die "$ArabicShaping: $!";
     while (<$fh>) {
         chomp $_;
         s/^#.*//;
@@ -206,7 +358,7 @@ sub build_ctx_map {
     }
     close $fh;
 
-    open $fh, '<', $Scripts or die $!;
+    open $fh, '<', $Scripts or die "$Scripts: $!";
     while (<$fh>) {
         chomp $_;
         s/\s+#.*$//;
@@ -246,7 +398,7 @@ sub build_ctx_map {
 
     # Construct compact array.
 
-    my $blklen = 1 << CTX_BLKWIDTH();
+    my $blklen = 1 << XPROP_BLKWIDTH();
 
     my @C_ARY = ();
     my @C_IDX = ();

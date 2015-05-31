@@ -15,7 +15,7 @@ MODULE = Unicode::Precis::Preparation		PACKAGE = Unicode::Precis::Preparation
 
 int
 _lookup_prop(cp)
-	U32 cp;
+	U32 cp
     PROTOTYPE: $
     CODE:
 	RETVAL = (int)precis_prop_lookup(cp);
@@ -23,11 +23,22 @@ _lookup_prop(cp)
 	RETVAL
 
 int
-_lookup_ctx(cp)
-	U32 cp;
+_lookup_xprop(cp)
+	U32 cp
     PROTOTYPE: $
     CODE:
-	RETVAL = (int)precis_ctx_lookup(cp);
+	RETVAL = (int)precis_xprop_lookup(cp);
+    OUTPUT:
+	RETVAL
+
+int
+_classname()
+    ALIAS:
+	ValidUTF8       = 0
+	FreeFormClass   = PRECIS_FREE_FORM_CLASS
+	IdentifierClass = PRECIS_IDENTIFIER_CLASS
+    CODE:
+	RETVAL = ix;
     OUTPUT:
 	RETVAL
 
@@ -36,7 +47,6 @@ _propname()
     ALIAS:
 	UNASSIGNED = PRECIS_UNASSIGNED
 	PVALID     = PRECIS_PVALID
-	ID_DIS     = PRECIS_ID_DIS
 	CONTEXTJ   = PRECIS_CONTEXTJ
 	CONTEXTO   = PRECIS_CONTEXTO
 	DISALLOWED = PRECIS_DISALLOWED
@@ -45,33 +55,71 @@ _propname()
     OUTPUT:
 	RETVAL
 
-int
-prepare(string, stringclassstr)
-	SV *string;
-	char *stringclassstr;
-    PROTOTYPE: $;$
+void
+_prepare(string, stringclass = 0, unicode_version = 0)
+	SV *string
+	int stringclass
+	int unicode_version
+    PROTOTYPE: $;$$
     PREINIT:
 	char *buf;
-	STRLEN buflen;
-	int stringclass;
-    CODE:
+	U8 *err;
+	STRLEN buflen, errlen, idx;
+	int retval;
+	U32 cp;
+    PPCODE:
 	if (SvOK(string))
 	    buf = SvPV(string, buflen);
 	else
-	    XSRETURN_UNDEF;
+	    XSRETURN_EMPTY;
 
-	if (stringclassstr == NULL || *stringclassstr == '\0')
-	    stringclass = 0;
-	else if (strcasecmp(stringclassstr, "IdentifierClass") == 0)
-	    stringclass = PRECIS_IDENTIFIER_CLASS;
-	else if (strcasecmp(stringclassstr, "FreeFormClass") == 0)
-	    stringclass = PRECIS_FREE_FORM_CLASS;
-	else if (strcasecmp(stringclassstr, "ValidUTF8") == 0)
-	    stringclass = 0;
-	else
-	    croak("Malformed value");
+	switch (stringclass) {
+	case 0:
+	case PRECIS_FREE_FORM_CLASS:
+	case PRECIS_IDENTIFIER_CLASS:
+	    break;
+	default:
+	    XSRETURN_EMPTY;
+	}
 
-	RETVAL = precis_prepare(stringclass, (U8 *)buf, buflen);
-    OUTPUT:
-	RETVAL
+	if (unicode_version < 0 || 0xFF < unicode_version)
+	    XSRETURN_EMPTY;
+
+	switch (GIMME_V) {
+	case G_SCALAR:
+	    retval = precis_prepare((U8 *)buf, buflen, stringclass,
+		unicode_version, NULL, NULL, NULL, NULL);
+	    if (retval != PRECIS_PVALID)
+		XSRETURN_EMPTY;
+	    XPUSHs(sv_2mortal(newSViv(1)));
+	    XSRETURN(1);
+
+	case G_ARRAY:
+	    retval = precis_prepare((U8 *)buf, buflen, stringclass,
+		unicode_version, &err, &errlen, &idx, &cp);
+	    XPUSHs(sv_2mortal(newSVpv("result", 0)));
+	    XPUSHs(sv_2mortal(newSViv(retval)));
+	    if (retval == PRECIS_PVALID)
+		XSRETURN(2);
+
+	    XPUSHs(sv_2mortal(newSVpv("offset", 0)));
+	    if (SvUTF8(string))
+		XPUSHs(sv_2mortal(newSViv(idx)));
+	    else
+		XPUSHs(sv_2mortal(newSViv(err - (U8 *)buf)));
+	    if (errlen == 0)
+		XSRETURN(4);
+
+	    XPUSHs(sv_2mortal(newSVpv("length", 0)));
+	    if (SvUTF8(string))
+		XPUSHs(sv_2mortal(newSViv(1)));
+	    else
+		XPUSHs(sv_2mortal(newSViv(errlen)));
+	    XPUSHs(sv_2mortal(newSVpv("ord", 0)));
+	    XPUSHs(sv_2mortal(newSViv(cp)));
+	    XSRETURN(8);
+
+	default:
+	    XSRETURN_EMPTY;
+	}
 

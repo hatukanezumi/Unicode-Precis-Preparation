@@ -8,6 +8,8 @@ precis_preparation.c
 precis_preparation.h
 Preparation.xs
 README
-t/Unicode-Precis-Preparation.t
+t/00use.t
+t/03contextualrules.t
+t/pod.t
 lib/POD2/JA/Unicode/Precis/Preparation.pod
 lib/Unicode/Precis/Preparation.pm

@@ -17,6 +17,7 @@ typedef enum {
 } precis_prop_t;
 
 extern U8 precis_prop_lookup(U32);
-extern U8 precis_ctx_lookup(U32);
-extern STRLEN precis_prepare(int, U8 *, const STRLEN);
-
+extern U8 precis_age_lookup(U32);
+extern U32 precis_xprop_lookup(U32);
+extern STRLEN precis_prepare(U8 *, const STRLEN, int, U8, U8 **, STRLEN *,
+			     STRLEN *, U32 *);

@@ -29,27 +29,87 @@ Parameters:
 
 =item $string
 
-検査する文字列。ユニコード文字列か、UTF-8のバイト文字列。
+検査する文字列。ユニコード文字列かバイト文字列。
 
 バイト文字列は、ユニコードへアップグレードされることなく
 UTF-8列として扱われることに注意。
 
 =item $stringclass
 
-C<"ValidUTF8"> (初期値)、C<"FreeFormClass">、C<"IdentifierClass"> のいずれか。
+C<"ValidUTF8"> (初期値)、C<"FreeFormClass">
+(RFC 7564参照)、C<"IdentifierClass"> (同) のいずれか。
+
+=item $unicode_version
+
+ユニコードの版を与えると、それに従ってレパートリを制限する。
+初期状態では、当モジュールを使うPerl
+が対応しているユニコードの版のレパートリが使われる。
 
 =back
 
 Returns:
 
+スカラコンテキストでは、
 指定した文字列クラスに適合すれば真値。そうでなければ偽値。
+
+配列コンテキストでは、
+次のキーを持つ対によるリストで結果の詳細を返す。
+
+=over
+
+=item C<result>
+
+L</Constants>で述べる特性値のいずれか。
+
+=item C<offset>
+
+検査が失敗したときの、文字列の先頭からのオフセット。
+オフセットは、バイト文字列ではバイト数、ユニコード文字列では文字数で数える。
+
+=item C<length>
+
+検査が失敗したときの、認められない文字の長さ。
+長さは、バイト文字列ではC<1>からC<4>、ユニコード文字列では常にC<1>、
+不正な列では未定義値となる。
+
+=item C<ord>
+
+C<length>がある場合、文字のユニコードスカラ値。
+
+=back
+
+=back
+
+=head2 Constants
+
+=over
+
+=item FreeFormClass
+
+=item IdentifierClass
+
+=item ValidUTF8
+
+文字列クラス。C<ValidUTF8>は当モジュールによる拡張である。
+
+=item UNASSIGNED
+
+=item PVALID
+
+=item CONTEXTJ
+
+=item CONTEXTO
+
+=item DISALLOWED
+
+結果を示す特性値。C<PVALID>は成功を意味する。
 
 =back
 
 =head2 EXPORT
 
 初期状態ではなにもエクスポートしない。
-C<:all> タグで prepare() をエクスポートする。
+C<:all> タグで prepare()および定数をエクスポートする。
 
 =head1 SEE ALSO
 

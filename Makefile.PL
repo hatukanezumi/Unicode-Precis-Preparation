@@ -1,7 +1,6 @@
 #-*- perl -*-
 #-*- coding: utf-8 -*-
 
-use 5.008001;
 use strict;
 use warnings;
 
@@ -11,6 +10,7 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
     NAME               => 'Unicode::Precis::Preparation',
     VERSION_FROM       => 'lib/Unicode/Precis/Preparation.pm',
+    MIN_PERL_VERSION   => 5.006001,
     CONFIGURE_REQUIRES => {
         'ExtUtils::MakeMaker' => '6.26',
         'Test::More'          => '0.45',
