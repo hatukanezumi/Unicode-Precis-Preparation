@@ -99,15 +99,12 @@ _prepare(string, stringclass = 0, unicode_version = 0)
 		unicode_version, &err, &errlen, &idx, &cp);
 	    XPUSHs(sv_2mortal(newSVpv("result", 0)));
 	    XPUSHs(sv_2mortal(newSViv(retval)));
-	    if (retval == PRECIS_PVALID)
-		XSRETURN(2);
-
 	    XPUSHs(sv_2mortal(newSVpv("offset", 0)));
 	    if (SvUTF8(string))
 		XPUSHs(sv_2mortal(newSViv(idx)));
 	    else
 		XPUSHs(sv_2mortal(newSViv(err - (U8 *)buf)));
-	    if (errlen == 0)
+	    if (retval == PRECIS_PVALID || errlen == 0)
 		XSRETURN(4);
 
 	    XPUSHs(sv_2mortal(newSVpv("length", 0)));

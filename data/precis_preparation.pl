@@ -160,8 +160,9 @@ sub build_prop_map {
     # Statistics.
 
     printf STDERR
-        "%d codepoints (in BMP, SMP, SIP and TIP), %d entries\n",
-        scalar(grep $_, @PROPS), scalar(@C_ARY);
+        "%d codepoints (in BMP, SMP, SIP and TIP), %d entries, %d bytes\n",
+        scalar(grep $_, @PROPS), scalar(@C_ARY),
+        (0x40000 >> PROP_BLKWIDTH()) * 2 + scalar(@C_ARY);
     die "Too many entries to work with unsigned 16-bit short integer: "
         . scalar(@C_ARY) . "\n"
         if (1 << 16) <= scalar(@C_ARY);
@@ -295,8 +296,9 @@ sub build_age_map {
     # Statistics.
 
     printf STDERR
-        "%d codepoints (in BMP, SMP, SIP and TIP), %d entries\n",
-        scalar(grep $_, @PROPS), scalar(@C_ARY);
+        "%d codepoints (in BMP, SMP, SIP and TIP), %d entries, %d bytes\n",
+        scalar(grep $_, @PROPS), scalar(@C_ARY),
+        (0x40000 >> AGE_BLKWIDTH()) * 2 + scalar(@C_ARY);
     die "Too many entries to work with unsigned 16-bit short integer: "
         . scalar(@C_ARY) . "\n"
         if (1 << 16) <= scalar(@C_ARY);
@@ -311,26 +313,20 @@ sub build_xprop_map {
     my @PROPS = ();
     my $fh;
 
-    open $fh, '<', $UnicodeData or die "$UnicodeData: $!";
-    while (<$fh>) {
-        chomp $_;
-        @_ = split /;/, $_;
-
-        my ($begin, $end) = split /\.\./, $_[0], 2;
-        $end ||= $begin;
-
-        my $property = $_[3];
-
-        foreach my $c (hex("0x$begin") .. hex("0x$end")) {
-            next unless $c < 0x40000;
-            next unless defined $property and $property eq '9';
-
-            die sprintf "Duplicated: U+%04X = %s : CCC_VIRAMA", $c, $PROPS[$c]
-                if defined $PROPS[$c];
-            $PROPS[$c] = "CCC_VIRAMA";
-        }
+    $PROPS[0x200C] = 'CH_ZWNJ';
+    $PROPS[0x200D] = 'CH_ZWJ';
+    $PROPS[0x00B7] = 'CH_MIDDLEDOT';
+    $PROPS[0x006C] = 'CH_SMALLL';
+    $PROPS[0x0375] = 'CH_KERAIA';
+    $PROPS[0x05F3] = 'CH_GERESH';
+    $PROPS[0x05F4] = 'CH_GERSHAYIM';
+    $PROPS[0x30FB] = 'CH_NAKAGURO';
+    foreach my $cp (0x0660 .. 0x0669) {
+        $PROPS[$cp] = 'BK_Arabic_Indic_digits';
     }
-    close $fh;
+    foreach my $cp (0x06F0 .. 0x06F9) {
+        $PROPS[$cp] = 'BK_extended_Arabic_Indic_digits';
+    }
 
     open $fh, '<', $ArabicShaping or die "$ArabicShaping: $!";
     while (<$fh>) {
@@ -378,6 +374,9 @@ sub build_xprop_map {
                 unless defined $property
                     and $property =~
                     /\A(Greek|Han|Hebrew|Hiragana|Katakana)\z/;
+            next if $c == 0x0375;    # KERAIA
+            next if $c == 0x05F3;    # GERESH
+            next if $c == 0x05F4;    # GERSHAYIM
 
             die sprintf "Duplicated: U+%04X = %s : SC_%s", $c, $PROPS[$c],
                 $property
@@ -385,6 +384,40 @@ sub build_xprop_map {
             $PROPS[$c] = "SC_$property";
         }
 
+    }
+    close $fh;
+
+    open $fh, '<', $UnicodeData or die "$UnicodeData: $!";
+    while (<$fh>) {
+        chomp $_;
+        @_ = split /;/, $_;
+
+        my ($begin, $end) = split /\.\./, $_[0], 2;
+        $end ||= $begin;
+
+        my $gc  = $_[2];
+        my $ccc = $_[3];
+
+        foreach my $c (hex("0x$begin") .. hex("0x$end")) {
+            next unless $c < 0x40000;
+
+            if (defined $ccc and $ccc eq '9') {
+                die sprintf "Duplicated: U+%04X = %s : CCC_VIRAMA", $c,
+                    $PROPS[$c]
+                    if defined $PROPS[$c];
+                $PROPS[$c] = 'CCC_VIRAMA';
+            }
+
+            if (defined $gc and ($gc eq 'Cf' or $gc eq 'Me' or $gc eq 'Mn')) {
+                unless ($c == 0x200C or $c == 0x200D) {    # JT:U and JT:C
+                    if (defined $PROPS[$c]) {
+                        $PROPS[$c] = sprintf 'JT_T | %s', $PROPS[$c];
+                    } else {
+                        $PROPS[$c] = 'JT_T';
+                    }
+                }
+            }
+        }
     }
     close $fh;
 
@@ -470,8 +503,9 @@ sub build_xprop_map {
     # Statistics.
 
     printf STDERR
-        "%d codepoints (in BMP, SMP, SIP and TIP), %d entries\n",
-        scalar(grep $_, @PROPS), scalar(@C_ARY);
+        "%d codepoints (in BMP, SMP, SIP and TIP), %d entries, %d bytes\n",
+        scalar(grep $_, @PROPS), scalar(@C_ARY),
+        (0x40000 >> XPROP_BLKWIDTH()) * 2 + scalar(@C_ARY);
     die "Too many entries to work with unsigned 16-bit short integer: "
         . scalar(@C_ARY) . "\n"
         if (1 << 16) <= scalar(@C_ARY);

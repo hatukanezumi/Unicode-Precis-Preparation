@@ -114,15 +114,15 @@ One of property values described in L</Constants>.
 
 =item C<offset>
 
-When the check fails,
-offset from beginning of string.
-Offset is based on byte for bytestring,
+If the check fails, offset from beginning of string.
+If succeeds, length of string.
+
+Offset or length is based on byte for bytestring,
 and based on character for Unicode string.
 
 =item C<length>
 
-When the check fails,
-length of disallowed character.
+When the check fails, length of disallowed character.
 Length is C<1> to C<4> for bytestring,
 always C<1> for Unicode string
 and undefined value for invalid sequence.

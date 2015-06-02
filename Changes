@@ -1,5 +1,17 @@
 Revision history for Perl extension Unicode::Precis::Preparation.
 
+0.000_03  Xxx Jun XX 2015
+! data/precis_preparation.pl
+! lib/POD2/JA/Unicode/Precis/Preparation.pod
+! lib/Unicode/Precis/Preparation.pm
+! Preparation.xs
+! precis_preparation.c
++ t/01utf8.t
+! t/03contextualrules.t
+  - Fix: Some tests fail on Perl < 5.14 due to codepoints added by Unicode 6.0.
+  - prepare() in array context also returns offset item if check succeeded.
+  - Adding some tests.
+
 0.000_02  Sun May 31 2015
 ! Changes
 ! data/makefile
