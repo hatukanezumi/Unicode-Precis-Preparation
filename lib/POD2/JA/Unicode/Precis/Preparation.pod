@@ -7,8 +7,9 @@ Unicode::Precis::Preparation~[ja] - RFC 7564 PRECISフレームワーク - 準�
 
 =head1 SYNOPSIS
 
-  use Unicode::Precis::Preparation qw(prepare);
-  $result = prepare($string, 'IdentifierClass');
+  use Unicode::Precis::Preparation qw(prepare IdentifierClass);
+  $result = prepare($string, IdentifierClass);
+  %result = prepare($string, IdentifierClass);
 
 =head1 DESCRIPTION
 
@@ -19,7 +20,7 @@ L<Unicode::Precis::Preparation>は、PRECIS
 
 =over
 
-=item prepare ( $string, [ $stringclass ] )
+=item prepare ( $string, [ $stringclass ], [ UnicodeVersion =E<gt> $version ] )
 
 文字列が指定した文字列クラスに適合するか検査する。
 
@@ -36,10 +37,10 @@ UTF-8列として扱われることに注意。
 
 =item $stringclass
 
-C<"ValidUTF8"> (初期値)、C<"FreeFormClass">
-(RFC 7564参照)、C<"IdentifierClass"> (同) のいずれか。
+C<ValidUTF8> (初期値)、C<FreeFormClass>
+(RFC 7564参照)、C<IdentifierClass> (同) のいずれか。
 
-=item $unicode_version
+=item UnicodeVersion =E<gt> $version
 
 ユニコードの版を与えると、それに従ってレパートリを制限する。
 初期状態では、当モジュールを使うPerl

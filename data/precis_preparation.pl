@@ -322,37 +322,11 @@ sub build_xprop_map {
     $PROPS[0x05F4] = 'CH_GERSHAYIM';
     $PROPS[0x30FB] = 'CH_NAKAGURO';
     foreach my $cp (0x0660 .. 0x0669) {
-        $PROPS[$cp] = 'BK_Arabic_Indic_digits';
+        $PROPS[$cp] = 'CH_Arabic_Indic_digits';
     }
     foreach my $cp (0x06F0 .. 0x06F9) {
-        $PROPS[$cp] = 'BK_extended_Arabic_Indic_digits';
+        $PROPS[$cp] = 'CH_extended_Arabic_Indic_digits';
     }
-
-    open $fh, '<', $ArabicShaping or die "$ArabicShaping: $!";
-    while (<$fh>) {
-        chomp $_;
-        s/^#.*//;
-        next unless /\S/;
-
-        @_ = split /; /, $_;
-
-        my ($begin, $end) = split /\.\./, $_[0], 2;
-        $end ||= $begin;
-
-        my $property = $_[2];
-
-        foreach my $c (hex("0x$begin") .. hex("0x$end")) {
-            next unless $c < 0x40000;
-            next unless defined $property and $property =~ /\A[DLTR]\z/;
-
-            die sprintf "Duplicated: U+%04X = %s : JT_%s", $c, $PROPS[$c],
-                $property
-                if defined $PROPS[$c];
-            $PROPS[$c] = "JT_$property";
-        }
-
-    }
-    close $fh;
 
     open $fh, '<', $Scripts or die "$Scripts: $!";
     while (<$fh>) {
@@ -418,6 +392,36 @@ sub build_xprop_map {
                 }
             }
         }
+    }
+    close $fh;
+
+    open $fh, '<', $ArabicShaping or die "$ArabicShaping: $!";
+    while (<$fh>) {
+        chomp $_;
+        s/^#.*//;
+        next unless /\S/;
+
+        @_ = split /; /, $_;
+
+        my ($begin, $end) = split /\.\./, $_[0], 2;
+        $end ||= $begin;
+
+        my $property = $_[2];
+
+        foreach my $c (hex("0x$begin") .. hex("0x$end")) {
+            next unless $c < 0x40000;
+            next unless defined $property and $property =~ /\A[DLTR]\z/;
+
+            die sprintf "Duplicated: U+%04X = %s : JT_%s", $c, $PROPS[$c],
+                $property
+                if defined $PROPS[$c] and $PROPS[$c] =~ /\AJT_/;
+	    if (defined $PROPS[$c]) {
+		$PROPS[$c] = sprintf 'JT_%s | %s', $property, $PROPS[$c];
+	    } else {
+                $PROPS[$c] = sprintf 'JT_%s', $property;
+	    }
+        }
+
     }
     close $fh;
 

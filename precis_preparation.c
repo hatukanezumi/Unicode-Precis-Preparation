@@ -1,3 +1,16 @@
+/*
+ * Unicode-Precis-Preparation
+ *
+ * Copyright (C) 2015 by Hatuka*nezumi - IKEDA Soji
+ *
+ * This library is free software; you can redistribute it and/or modify it
+ * under the same terms as Perl. For more details, see the full text of
+ * the licenses at <http://dev.perl.org/licenses/>.
+ *
+ * This program is distributed in the hope that it will be
+ * useful, but without any warranty; without even the implied
+ * warranty of merchantability or fitness for a particular purpose.
+ */
 
 #include <assert.h>
 #include "precis_preparation.h"
@@ -8,14 +21,15 @@
 #define XPROP_BLKWIDTH (7)
 
 #define JT_T (0x80)
-#define JT_L (0x40)
-#define JT_R (0x20)
-#define JT_D (JT_L | JT_R)
+#define JT_R (0x40)
+#define JT_L (0x20)
+#define JT_D (JT_R | JT_L)
+#define JT_MASK (JT_T | JT_R | JT_L)
 
 typedef enum {
-    BK_Arabic_Indic_digits = 1,
-    BK_extended_Arabic_Indic_digits,
-    CCC_VIRAMA,
+    CCC_VIRAMA = 1,
+    CH_Arabic_Indic_digits,
+    CH_extended_Arabic_Indic_digits,
     CH_GERESH,
     CH_GERSHAYIM,
     CH_KERAIA,
@@ -3782,11 +3796,13 @@ static U8 precis_prop_array[] = {
     PRECIS_DISALLOWED
 };
 
-U8 precis_prop_lookup(U32 cp)
+static U8 precis_prop_lookup(U32 cp)
 {
-    if ((cp & 0x00FFFE) == 0x00FFFE ||
-	cp == 0x0E0001 || (0x0E0020 <= cp && cp <= 0x0E007F) ||
-	(0x0E0100 <= cp && cp <= 0x0E01EF))
+    if ((cp & 0x00FFFE) == 0x00FFFE
+	|| cp == 0x0E0001 || (0x0E0020 <= cp && cp <= 0x0E007F)
+	|| (0x0E0100 <= cp && cp <= 0x0E01EF)
+	|| (0x0F0000 <= cp && cp <= 0x0FFFFD)
+	|| (0x100000 <= cp && cp <= 0x10FFFD))
 	return PRECIS_DISALLOWED;
     else if (0x040000 <= cp)
 	return PRECIS_UNASSIGNED;
@@ -4832,7 +4848,7 @@ static U8 precis_age_array[] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x20, 0x20
 };
 
-U8 precis_age_lookup(U32 cp)
+static U8 precis_age_lookup(U32 cp)
 {
     if ((0x01FFFE <= cp && (cp & 0x00FFFE) == 0x00FFFE)
 	|| (0x0F0000 <= cp && cp <= 0x0FFFFD)
@@ -5084,10 +5100,10 @@ static U8 precis_xprop_array[] = {
     JT_D, JT_D, JT_D, JT_D, JT_D, 0, JT_D, JT_D, JT_D, JT_D, JT_D, JT_D,
     JT_D, JT_R, JT_D, JT_D, JT_T, JT_T, JT_T, JT_T, JT_T, JT_T, JT_T, JT_T,
     JT_T, JT_T, JT_T, JT_T, JT_T, JT_T, JT_T, JT_T, JT_T, JT_T, JT_T, JT_T,
-    JT_T, BK_Arabic_Indic_digits, BK_Arabic_Indic_digits,
-    BK_Arabic_Indic_digits, BK_Arabic_Indic_digits, BK_Arabic_Indic_digits,
-    BK_Arabic_Indic_digits, BK_Arabic_Indic_digits, BK_Arabic_Indic_digits,
-    BK_Arabic_Indic_digits, BK_Arabic_Indic_digits, 0, 0, 0, 0, JT_D, JT_D,
+    JT_T, CH_Arabic_Indic_digits, CH_Arabic_Indic_digits,
+    CH_Arabic_Indic_digits, CH_Arabic_Indic_digits, CH_Arabic_Indic_digits,
+    CH_Arabic_Indic_digits, CH_Arabic_Indic_digits, CH_Arabic_Indic_digits,
+    CH_Arabic_Indic_digits, CH_Arabic_Indic_digits, 0, 0, 0, 0, JT_D, JT_D,
     JT_T, JT_R, JT_R, JT_R, 0, JT_R, JT_R, JT_R, JT_D, JT_D, JT_D, JT_D,
     JT_D, JT_D, JT_D, JT_D, JT_R, JT_R, JT_R, JT_R, JT_R, JT_R, JT_R, JT_R,
     JT_R, JT_R, JT_R, JT_R, JT_R, JT_R, JT_R, JT_R, JT_R, JT_R, JT_D, JT_D,
@@ -5098,11 +5114,11 @@ static U8 precis_xprop_array[] = {
     JT_D, JT_R, JT_D, JT_R, JT_D, JT_D, JT_R, JT_R, 0, JT_R, JT_T, JT_T,
     JT_T, JT_T, JT_T, JT_T, JT_T, JT_T, 0, JT_T, JT_T, JT_T, JT_T, JT_T,
     JT_T, 0, 0, JT_T, JT_T, 0, JT_T, JT_T, JT_T, JT_T, JT_R, JT_R,
-    BK_extended_Arabic_Indic_digits, BK_extended_Arabic_Indic_digits,
-    BK_extended_Arabic_Indic_digits, BK_extended_Arabic_Indic_digits,
-    BK_extended_Arabic_Indic_digits, BK_extended_Arabic_Indic_digits,
-    BK_extended_Arabic_Indic_digits, BK_extended_Arabic_Indic_digits,
-    BK_extended_Arabic_Indic_digits, BK_extended_Arabic_Indic_digits, JT_D,
+    CH_extended_Arabic_Indic_digits, CH_extended_Arabic_Indic_digits,
+    CH_extended_Arabic_Indic_digits, CH_extended_Arabic_Indic_digits,
+    CH_extended_Arabic_Indic_digits, CH_extended_Arabic_Indic_digits,
+    CH_extended_Arabic_Indic_digits, CH_extended_Arabic_Indic_digits,
+    CH_extended_Arabic_Indic_digits, CH_extended_Arabic_Indic_digits, JT_D,
     JT_D, JT_D, 0, 0, JT_D, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     JT_T, JT_R, JT_T, JT_D, JT_D, JT_D, JT_R, JT_R, JT_R, JT_R, JT_R, JT_D,
     JT_D, JT_D, JT_D, JT_R, JT_D, JT_D, JT_D, JT_D, JT_D, JT_D, JT_D, JT_D,
@@ -5666,7 +5682,7 @@ static U8 precis_xprop_array[] = {
     SC_Han, SC_Han, SC_Han, SC_Han
 };
 
-U32 precis_xprop_lookup(U32 cp)
+static U32 precis_xprop_lookup(U32 cp)
 {
     if (cp == 0x0E0001 || (0x0E0020 <= cp && cp <= 0x0E007F)
 	|| (0x0E0100 <= cp && cp <= 0x0E01EF))
@@ -5699,7 +5715,7 @@ static const U8 utf8_sequence_len[0x100] = {
 };
 
 STRLEN precis_prepare(U8 * buf, const STRLEN buflen, int stringclass,
-		      U8 unicode_version, U8 ** errptr, STRLEN * errlenptr,
+		      U8 unicode_version, U8 ** pptr, STRLEN * lenptr,
 		      STRLEN * idxptr, U32 * cpptr)
 {
     U8 *p = buf;
@@ -5710,17 +5726,17 @@ STRLEN precis_prepare(U8 * buf, const STRLEN buflen, int stringclass,
     U32 cp = 0;
     U8 prop = PRECIS_PVALID;
     U8 has_hankana = 0, has_aid = 0, has_eaid = 0;
-    struct {
+    typedef struct {
 	U8 *p;
 	STRLEN len;
 	STRLEN idx;
 	U32 cp;
-    } ctx = {
-    NULL, 0, 0, 0}, nakaguro = {
-    NULL, 0, 0, 0};
+    } ctx_t;
+    ctx_t ctx = { NULL, 0, 0, 0 };
+    ctx_t nakaguro = { NULL, 0, 0, 0 };
 
     U32 vec;
-    U32 xprop, xprop_JT_T, xprop_before = 0;
+    U32 xprop, jtype, xprop_before = 0, jtype_before = 0;
 
     while (p < end4) {
       check:
@@ -5752,7 +5768,7 @@ STRLEN precis_prepare(U8 * buf, const STRLEN buflen, int stringclass,
 	    cp = ((U32) (p[0] & 0x0F) << 12)
 		| ((U32) (p[1] & 0x3F) << 6) | ((U32) (p[2] & 0x3F));
 	    /* Surrogates U+D800..U+DFFF */
-	    if ((cp & 0x00D800) == 0x00D800)
+	    if ((cp & 0x00F800) == 0x00D800)
 		goto disallowed;
 	    /* Non-characters U+FDD0..U+FDEF, U+FFFE..U+FFFF */
 	    if (0x00FDD0 <= cp && cp <= 0x00FDEF)
@@ -5799,7 +5815,7 @@ STRLEN precis_prepare(U8 * buf, const STRLEN buflen, int stringclass,
 	case PRECIS_FREE_FORM_CLASS:
 	case PRECIS_IDENTIFIER_CLASS:
 
-	    /* Resolve property and xprop. */
+	    /* Resolve property. */
 
 	    prop = precis_prop_lookup(cp);
 
@@ -5821,11 +5837,14 @@ STRLEN precis_prepare(U8 * buf, const STRLEN buflen, int stringclass,
 		goto done;
 	    }
 
+	    /* Resolve contextual rules. */
+
 	    xprop = precis_xprop_lookup(cp);
-	    xprop_JT_T = xprop & JT_T;
-	    xprop &= ~JT_T;
+	    jtype = xprop & JT_MASK;
+	    xprop &= ~JT_MASK;
 
 	    if (xprop == CH_NAKAGURO) {
+		/* Rule 7: Record use of NAKAGURO. */
 		if (nakaguro.p == NULL) {
 		    nakaguro.p = p;
 		    nakaguro.len = len;
@@ -5835,8 +5854,9 @@ STRLEN precis_prepare(U8 * buf, const STRLEN buflen, int stringclass,
 		prop = PRECIS_PVALID;
 		xprop = 0;
 	    }
-
-	    /* Resolve contextual rules. */
+	    if ((jtype_before & JT_L) && (jtype & JT_T))
+		/* Rule 1.2: Allowing Re((JT:{L,D})(JT:T)*) */
+		jtype = jtype_before;
 
 	    switch (xprop_before) {
 	    case CH_ZWNJ:
@@ -5854,75 +5874,55 @@ STRLEN precis_prepare(U8 * buf, const STRLEN buflen, int stringclass,
 		ctx.idx = idx;
 		ctx.cp = cp;
 	    }
-	    switch (xprop_before) {
-	    case JT_D:
-	    case JT_L:
-		/* Rule 1.2: skipping intermediate JT:T characters. */
-		if (xprop_JT_T) {
-		    prop = PRECIS_PVALID;
-		    xprop = xprop_before;
-		    goto skip;
-		}
-	    }			/* switch (xprop_before) */
 
 	    switch (xprop) {
 		/* Rule 1: ZERO WIDTH NON-JOINER */
 	    case CH_ZWNJ:	/* ZWNJ, CONTEXTJ */
-		switch (xprop_before) {
-		case CCC_VIRAMA:
+		if (xprop_before == CCC_VIRAMA) {
 		    /* Rule 1.1: CCC(Before(cp)) .eq. Virama */
 		    prop = PRECIS_PVALID;
-		    break;
-		case JT_D:
-		case JT_L:
-		    /* Rule 1.2 top half: /(JT:{L,D})(JT:T)*\u200C/ */
-		    break;
-		default:
+		    xprop = 0;
+		} else if (jtype_before & JT_L)
+		    /* Rule 1.2 top half: Re((JT:{L,D})(JT:T)*\u200C) */
+		    ;
+		else
 		    goto done;
-		}
 		break;
 
 	      after_ZWNJ:
-		/* Rule 1.2 bottom half: /\u200C(JT:T)*(JT:{R,D})/ */
-		if (xprop_JT_T) {
+		/* Rule 1.2 bottom half: Re(\u200C(JT:T)*(JT:{R,D})) */
+		if (jtype & JT_T) {
 		    prop = PRECIS_CONTEXTJ;
-		    xprop = xprop_before;
-		} else
-		    switch (xprop) {
-		    case JT_D:
-		    case JT_R:
-			break;
-		    default:
-			prop = PRECIS_CONTEXTJ;
-			goto done;
-		    }
-		break;
-
-	    case CCC_VIRAMA:
-	    case JT_D:
-	    case JT_L:
-	    case JT_R:
+		    xprop = xprop_before;	/* CP_ZWNJ */
+		    jtype = jtype_before;	/* 0 */
+		} else if (jtype & JT_R);
+		else {
+		    prop = PRECIS_CONTEXTJ;
+		    goto done;
+		}
 		break;
 
 		/* Rule 2: ZERO WIDTH JOINER */
 	    case CH_ZWJ:	/* ZWJ, CONTEXTJ */
-		switch (xprop_before) {
-		case CCC_VIRAMA:
+		if (xprop_before == CCC_VIRAMA)
 		    prop = PRECIS_PVALID;
-		    break;
-		default:
+		else
 		    goto done;
-		}
+		break;
+
+	    case CCC_VIRAMA:
 		break;
 
 		/* Rule 3: MIDDLE DOT */
 	    case CH_MIDDLEDOT:	/* MIDDLE DOT, CONTEXTO */
-		if (xprop_before != CH_SMALLL)
+		if (xprop_before == CH_SMALLL);
+		else
 		    goto done;
 		break;
 
 	      after_MIDDLEDOT:
-		if (xprop != CH_SMALLL) {
+		if (xprop == CH_SMALLL);
+		else {
 		    prop = PRECIS_CONTEXTO;
 		    goto done;
 		}
@@ -5991,7 +5991,7 @@ STRLEN precis_prepare(U8 * buf, const STRLEN buflen, int stringclass,
 		break;
 
 		/* Rule 8: ARABIC-INDIC DIGITS */
-	    case BK_Arabic_Indic_digits:
+	    case CH_Arabic_Indic_digits:
 		/* Arabic-Indic digits, CONTEXTO */
 		if (has_eaid)
 		    goto done;
@@ -6002,7 +6002,7 @@ STRLEN precis_prepare(U8 * buf, const STRLEN buflen, int stringclass,
 		break;
 
 		/* Rule 9: EXTENDED ARABIC-INDIC DIGITS */
-	    case BK_extended_Arabic_Indic_digits:
+	    case CH_extended_Arabic_Indic_digits:
 		/* Extended Arabic-Indic digits, CONTEXTO */
 		if (has_aid)
 		    goto done;
@@ -6017,8 +6017,8 @@ STRLEN precis_prepare(U8 * buf, const STRLEN buflen, int stringclass,
 		assert(xprop == 0);
 	    }			/* switch (xprop) */
 
-	  skip:
 	    xprop_before = xprop;
+	    jtype_before = jtype;
 	    break;
 
 	default:
@@ -6028,15 +6028,19 @@ STRLEN precis_prepare(U8 * buf, const STRLEN buflen, int stringclass,
 	p += len;
 	idx++;
     }				/* while (p < end4) */
-    if (p < end && p + utf8_sequence_len[*p] <= end)
-	goto check;
+    if (p < end) {
+	if (p + utf8_sequence_len[*p] <= end)
+	    goto check;
+	else
+	    goto illseq;
+    }
 
   done:
     if (nakaguro.p != NULL && !has_hankana) {
-	if (errptr != NULL)
-	    *errptr = nakaguro.p;
-	if (errlenptr != NULL)
-	    *errlenptr = nakaguro.len;
+	if (pptr != NULL)
+	    *pptr = nakaguro.p;
+	if (lenptr != NULL)
+	    *lenptr = nakaguro.len;
 	if (idxptr != NULL)
 	    *idxptr = nakaguro.idx;
 	if (cpptr != NULL)
@@ -6048,10 +6052,10 @@ STRLEN precis_prepare(U8 * buf, const STRLEN buflen, int stringclass,
 	case PRECIS_CONTEXTO:
 	    assert(ctx.p != NULL);
 
-	    if (errptr != NULL)
-		*errptr = ctx.p;
-	    if (errlenptr != NULL)
-		*errlenptr = ctx.len;
+	    if (pptr != NULL)
+		*pptr = ctx.p;
+	    if (lenptr != NULL)
+		*lenptr = ctx.len;
 	    if (idxptr != NULL)
 		*idxptr = ctx.idx;
 	    if (cpptr != NULL)
@@ -6060,10 +6064,10 @@ STRLEN precis_prepare(U8 * buf, const STRLEN buflen, int stringclass,
 
 	case PRECIS_DISALLOWED:
 	case PRECIS_UNASSIGNED:
-	    if (errptr != NULL)
-		*errptr = p;
-	    if (errlenptr != NULL)
-		*errlenptr = len;
+	    if (pptr != NULL)
+		*pptr = p;
+	    if (lenptr != NULL)
+		*lenptr = len;
 	    if (idxptr != NULL)
 		*idxptr = idx;
 	    if (cpptr != NULL)
@@ -6071,10 +6075,10 @@ STRLEN precis_prepare(U8 * buf, const STRLEN buflen, int stringclass,
 	    break;
 
 	default:
-	    if (errptr != NULL)
-		*errptr = p;
-	    if (errlenptr != NULL)
-		*errlenptr = 0;
+	    if (pptr != NULL)
+		*pptr = p;
+	    if (lenptr != NULL)
+		*lenptr = 0;
 	    if (idxptr != NULL)
 		*idxptr = idx;
 	    break;

@@ -14,24 +14,6 @@
 MODULE = Unicode::Precis::Preparation		PACKAGE = Unicode::Precis::Preparation		
 
 int
-_lookup_prop(cp)
-	U32 cp
-    PROTOTYPE: $
-    CODE:
-	RETVAL = (int)precis_prop_lookup(cp);
-    OUTPUT:
-	RETVAL
-
-int
-_lookup_xprop(cp)
-	U32 cp
-    PROTOTYPE: $
-    CODE:
-	RETVAL = (int)precis_xprop_lookup(cp);
-    OUTPUT:
-	RETVAL
-
-int
 _classname()
     ALIAS:
 	ValidUTF8       = 0

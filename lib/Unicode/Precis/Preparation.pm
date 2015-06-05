@@ -15,18 +15,17 @@ our %EXPORT_TAGS = (
             ValidUTF8 FreeFormClass IdentifierClass
             UNASSIGNED PVALID CONTEXTJ CONTEXTO DISALLOWED)
     ],
-    'internal' => [qw(_lookup_prop _lookup_xprop)]
 );
-our @EXPORT_OK = (@{$EXPORT_TAGS{'all'}}, @{$EXPORT_TAGS{'internal'}});
+our @EXPORT_OK = @{$EXPORT_TAGS{'all'}};
 
-our $VERSION    = '0.000_02';
+our $VERSION    = '0.000_03';
 our $XS_VERSION = $VERSION;
 $VERSION = eval $VERSION;    # see L<perlmodstyle>
 
 require XSLoader;
 XSLoader::load('Unicode::Precis::Preparation', $XS_VERSION);
 
-BEGIN { eval 'use Unicode::UCD'; }
+BEGIN { eval 'require Unicode::UCD'; }
 my $UnicodeVersion;
 if ($Unicode::UCD::VERSION) {
     $UnicodeVersion = Unicode::UCD::UnicodeVersion();
@@ -36,11 +35,12 @@ if ($Unicode::UCD::VERSION) {
 }
 
 sub prepare {
-    my $string          = shift;
-    my $stringclass     = shift || 0;
-    my $unicode_version = shift || $UnicodeVersion;
+    my $string      = shift;
+    my $stringclass = shift || 0;
+    my %options     = @_;
 
-    my ($unicode_major, $unicode_minor) = split /[.]/, $unicode_version;
+    my ($unicode_major, $unicode_minor) =
+        split /[.]/, ($options{UnicodeVersion} || $UnicodeVersion);
     $unicode_minor ||= 0;
 
     _prepare($string, $stringclass, ($unicode_major << 4) + $unicode_minor);
@@ -57,8 +57,9 @@ Unicode::Precis::Preparation - RFC 7564 PRECIS Framework - Preparation
 
 =head1 SYNOPSIS
 
-  use Unicode::Precis::Preparation qw(:all);
+  use Unicode::Precis::Preparation qw(prepare IdentifierClass);
   $result = prepare($string, IdentifierClass);
+  %result = prepare($string, IdentifierClass);
 
 =head1 DESCRIPTION
 
@@ -69,7 +70,7 @@ according to PRECIS framework.
 
 =over
 
-=item prepare ( $string, [ $stringclass ], [ $unicode_version ] )
+=item prepare ( $string, [ $stringclass ], [ UnicodeVersion =E<gt> $version ] )
 
 Check if a string conforms to specified string class.
 
@@ -89,7 +90,7 @@ as UTF-8 sequence.
 One of the constants C<ValidUTF8> (default), C<IdentifierClass> (see RFC 7564)
 or C<FreeFormClass> (ditto).
 
-=item $unicode_version
+=item UnicodeVersion =E<gt> $version
 
 If a version of Unicode is given, repertoire is restricted according to it.
 By default, repertoire of Unicode version supported by Perl using this module
