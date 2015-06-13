@@ -102,3 +102,11 @@ _prepare(string, stringclass = 0, unicode_version = 0)
 	    XSRETURN_EMPTY;
 	}
 
+void
+__utf8_on(string)
+	SV *string
+    PROTOTYPE: $
+    PPCODE:
+	if (SvOK(string))
+	    SvUTF8_on(string);
+

@@ -1,5 +1,16 @@
 Revision history for Perl extension Unicode::Precis::Preparation.
 
+0.01  Sat Jun 13 2015
+! lib/POD2/JA/Unicode/Precis/Preparation.pod
+! lib/Unicode/Precis/Preparation.pm
+! precis_preparation.c
+! precis_preparation.h
+! t/01utf8.t
++ t/02repertoires.t
++ t/Utils.pm
+  - Doc: Added RESTRICTIONS section.
+  - Added tests.
+
 0.000_03  Sat Jun 06 2015
 ! data/precis_preparation.pl
 ! lib/POD2/JA/Unicode/Precis/Preparation.pod

@@ -4,14 +4,11 @@
 use strict;
 use warnings;
 
-use Data::Dumper;
-
-BEGIN {
-    eval 'use Encode qw(_utf8_on)';
-}
 use Test::More tests => 11;
-
 use Unicode::Precis::Preparation qw(:all);
+use t::Utils;
+
+my $ebcdic = (pack('U', 0x0041) ne 'A');
 
 # undef
 is(prepare(undef), undef, 'undef');
@@ -47,12 +44,13 @@ foreach my $uc (@COMPLETE) {
                 'Incomplete'
             )
             ) {
-            diag sprintf '%s %s', 'Incomplete', escape_bytestring($str);
+            diag sprintf '%s %s', 'Incomplete',
+                t::Utils::escape_bytestring($str);
             $ok = 0;
             last;
         }
-        if ($Encode::VERSION) {
-            _utf8_on($str);
+        unless ($ebcdic) {
+            Unicode::Precis::Preparation::__utf8_on($str);
             unless (
                 eq_array(
                     [prepare($str, ValidUTF8, UnicodeVersion => '5.2')],
@@ -142,13 +140,12 @@ sub dotest {
         $result = [prepare($uc, ValidUTF8, UnicodeVersion => '4.0')];
         pop @$result if scalar @$result == 8;
         unless (eq_array($result, $exp)) {
-            diag sprintf '%s \\x%*v02X', $legend, '\\x', $uc;
-            diag Dumper $result;
+            diag sprintf '%s %s', $legend, t::Utils::escape_bytestring($uc);
             $ok = 0;
             last;
         }
-        if ($Encode::VERSION) {
-            _utf8_on($uc);
+        unless ($ebcdic) {
+            Unicode::Precis::Preparation::__utf8_on($uc);
             my $exp = [@$expected];
             $exp->[3] = 1 if 4 <= scalar @$exp and $exp->[3];
             $exp->[5] = 1 if 6 <= scalar @$exp;
@@ -156,16 +153,10 @@ sub dotest {
             pop @$result if scalar @$result == 8;
             unless (eq_array($result, $exp)) {
                 diag sprintf '%s U+%04X', $legend, ord $uc;
-                diag Dumper $result;
                 $ok = 0;
                 last;
             }
         }
     }
     ok($ok, $legend);
-}
-
-sub escape_bytestring {
-    my $str = shift;
-    '\\x' . join '\\x', map { sprintf '%02X', ord $_ } split //, $str;
 }

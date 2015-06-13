@@ -5714,9 +5714,9 @@ static const U8 utf8_sequence_len[0x100] = {
     4, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,	/* 0xF0-0xFF */
 };
 
-STRLEN precis_prepare(U8 * buf, const STRLEN buflen, int stringclass,
-		      U8 unicode_version, U8 ** pptr, STRLEN * lenptr,
-		      STRLEN * idxptr, U32 * cpptr)
+int precis_prepare(U8 * buf, const STRLEN buflen, int stringclass,
+		   U8 unicode_version, U8 ** pptr, STRLEN * lenptr,
+		   STRLEN * idxptr, U32 * cpptr)
 {
     U8 *p = buf;
     const U8 *end = buf + buflen;

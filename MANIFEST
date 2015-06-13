@@ -10,7 +10,9 @@ Preparation.xs
 README
 t/00use.t
 t/01utf8.t
+t/02repertoires.t
 t/03contextualrules.t
 t/pod.t
+t/Utils.pm
 lib/POD2/JA/Unicode/Precis/Preparation.pod
 lib/Unicode/Precis/Preparation.pm

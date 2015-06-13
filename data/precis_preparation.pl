@@ -415,11 +415,11 @@ sub build_xprop_map {
             die sprintf "Duplicated: U+%04X = %s : JT_%s", $c, $PROPS[$c],
                 $property
                 if defined $PROPS[$c] and $PROPS[$c] =~ /\AJT_/;
-	    if (defined $PROPS[$c]) {
-		$PROPS[$c] = sprintf 'JT_%s | %s', $property, $PROPS[$c];
-	    } else {
+            if (defined $PROPS[$c]) {
+                $PROPS[$c] = sprintf 'JT_%s | %s', $property, $PROPS[$c];
+            } else {
                 $PROPS[$c] = sprintf 'JT_%s', $property;
-	    }
+            }
         }
 
     }

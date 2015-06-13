@@ -16,6 +16,8 @@ Unicode::Precis::Preparation~[ja] - RFC 7564 PRECISフレームワーク - 準�
 L<Unicode::Precis::Preparation>は、PRECIS
 フレームワークに従ってユニコード文字列またはUTF-8のバイト文字列の準備を行う。
 
+なお当ドキュメントでは、「UTF-8」という語を本来の意味で用いる。
+
 =head2 Function
 
 =over
@@ -74,7 +76,7 @@ L</Constants>で述べる特性値のいずれか。
 
 検査が失敗したときの、認められない文字の長さ。
 長さは、バイト文字列ではC<1>からC<4>、ユニコード文字列では常にC<1>、
-不正な列では未定義値となる。
+不正な列では未定義となる。
 
 =item C<ord>
 
@@ -110,10 +112,14 @@ C<length>がある場合、文字のユニコードスカラ値。
 
 =back
 
-=head2 EXPORT
+=head2 Exports
 
 初期状態ではなにもエクスポートしない。
 C<:all> タグで prepare()および定数をエクスポートする。
+
+=head1 RESTRICTIONS
+
+prepare()はEBCDICプラットフォームでのユニコード文字列を検査できない。
 
 =head1 SEE ALSO
 
@@ -132,7 +138,7 @@ Hatuka*nezumi - IKEDA Soji, E<lt>hatuka@nezumi.nuE<gt>
 Copyright (C) 2015 by Hatuka*nezumi - IKEDA Soji
 
 This library is free software; you can redistribute it and/or modify it
-under the same terms as Perl. For more details, see the full text of
+under the same terms as Perl itself. For more details, see the full text of
 the licenses at <http://dev.perl.org/licenses/>.
 
 This program is distributed in the hope that it will be

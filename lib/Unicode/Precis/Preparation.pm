@@ -6,6 +6,7 @@ package Unicode::Precis::Preparation;
 use 5.006001;
 use strict;
 use warnings;
+no utf8;
 
 use base qw(Exporter);
 
@@ -18,7 +19,7 @@ our %EXPORT_TAGS = (
 );
 our @EXPORT_OK = @{$EXPORT_TAGS{'all'}};
 
-our $VERSION    = '0.000_03';
+our $VERSION    = '0.01';
 our $XS_VERSION = $VERSION;
 $VERSION = eval $VERSION;    # see L<perlmodstyle>
 
@@ -65,6 +66,8 @@ Unicode::Precis::Preparation - RFC 7564 PRECIS Framework - Preparation
 
 L<Unicode::Precis::Preparation> prepares Unicode string or UTF-8 bytestring
 according to PRECIS framework.
+
+Note that the word "UTF-8" in this document is used in its proper meaning.
 
 =head2 Function
 
@@ -126,7 +129,7 @@ and based on character for Unicode string.
 When the check fails, length of disallowed character.
 Length is C<1> to C<4> for bytestring,
 always C<1> for Unicode string
-and undefined value for invalid sequence.
+and undefined for invalid sequence.
 
 =item C<ord>
 
@@ -164,10 +167,14 @@ C<PVALID> means successful result.
 
 =back
 
-=head2 EXPORT
+=head2 Exports
 
 None are exported by default.
 prepare() and constants may be exported by C<:all> tag.
+
+=head1 RESTRICTIONS
+
+prepare() can not check Unicode string on EBCDIC platforms.
 
 =head1 SEE ALSO
 
@@ -186,7 +193,7 @@ Hatuka*nezumi - IKEDA Soji, E<lt>hatuka@nezumi.nuE<gt>
 Copyright (C) 2015 by Hatuka*nezumi - IKEDA Soji
 
 This library is free software; you can redistribute it and/or modify it
-under the same terms as Perl. For more details, see the full text of
+under the same terms as Perl itself. For more details, see the full text of
 the licenses at <http://dev.perl.org/licenses/>.
 
 This program is distributed in the hope that it will be
