@@ -1,7 +1,7 @@
 /*
  * Unicode-Precis-Preparation
  *
- * Copyright (C) 2015 by Hatuka*nezumi - IKEDA Soji
+ * Copyright (C) 2015, 2025 by Hatuka*nezumi - IKEDA Soji
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the same terms as Perl. For more details, see the full text of

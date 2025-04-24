@@ -117,9 +117,7 @@ C<length>がある場合、文字のユニコードスカラ値。
 初期状態ではなにもエクスポートしない。
 C<:all> タグで prepare()および定数をエクスポートする。
 
-=head1 RESTRICTIONS
-
-prepare()はEBCDICプラットフォームでのユニコード文字列を検査できない。
+=head1 CAVEATS
 
 =head2 ユニコードの版
 
@@ -129,15 +127,19 @@ prepare()はEBCDICプラットフォームでのユニコード文字列を検�
 
 導出特性はユニコード6.3.0以降に基づく。
 文字によってはユニコード6.0.0より前と非互換な特性値を持つ (RFC 6452も参照)。
-ユニコード6.3.0以後に追加された文字の特性値は将来変わるかもしれない。
+一方、ユニコード6.3.0以後に追加された文字の特性値は将来変わるかもしれない。
 
 =item 文脈規則
 
-文脈規則が検査する文字の特性は、Perl
+文脈規則が参照する文字の特性は、Perl
 の最近の版が対応しているユニコードの版に基づく。
 文字によってはユニコード6.3.0と非互換な特性値を持つ。
 
 =back
+
+=head1 RESTRICTIONS
+
+prepare()はEBCDICプラットフォームでのユニコード文字列を検査できない。
 
 =head1 SEE ALSO
 
@@ -153,7 +155,7 @@ Hatuka*nezumi - IKEDA Soji, E<lt>hatuka@nezumi.nuE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2015, 2018 by Hatuka*nezumi - IKEDA Soji
+Copyright (C) 2015, 2018, 2025 by Hatuka*nezumi - IKEDA Soji
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. For more details, see the full text of

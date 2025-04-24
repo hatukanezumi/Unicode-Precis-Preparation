@@ -172,9 +172,7 @@ C<PVALID> means successful result.
 None are exported by default.
 prepare() and constants may be exported by C<:all> tag.
 
-=head1 RESTRICTIONS
-
-prepare() can not check Unicode string on EBCDIC platforms.
+=head1 CAVEATS
 
 =head2 Unicode versions
 
@@ -185,16 +183,20 @@ prepare() can not check Unicode string on EBCDIC platforms.
 Derived properties are based on Unicode 6.3.0 or later.
 Some characters have imcompatible property values with Unicode prior to 6.0.0
 (See also RFC 6452).
-Property values of characters added by Unicode version after 6.3.0 can be
-changed in the future.
+On the other hand, property values of characters added by Unicode version after
+6.3.0 can be changed in the future.
 
 =item Contextual rules
 
-Character properties checked by contextual rules are based on Unicode version
+Character properties referred by contextual rules are based on Unicode version
 that recent version of Perl supports.
 Some characters have imcompatible property values with Unicode 6.3.0.
 
 =back
+
+=head1 RESTRICTIONS
+
+prepare() can not check Unicode string on EBCDIC platforms.
 
 =head1 SEE ALSO
 
@@ -210,7 +212,7 @@ Hatuka*nezumi - IKEDA Soji, E<lt>hatuka@nezumi.nuE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2015, 2018 by Hatuka*nezumi - IKEDA Soji
+Copyright (C) 2015, 2018, 2025 by Hatuka*nezumi - IKEDA Soji
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself. For more details, see the full text of
