@@ -19,7 +19,7 @@ our %EXPORT_TAGS = (
 );
 our @EXPORT_OK = @{$EXPORT_TAGS{'all'}};
 
-our $VERSION    = '0.999_01';
+our $VERSION    = '2025.004';
 our $XS_VERSION = $VERSION;
 $VERSION = eval $VERSION;    # see L<perlmodstyle>
 

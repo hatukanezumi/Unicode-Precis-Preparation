@@ -1,5 +1,19 @@
 Revision history for Perl extension Unicode::Precis::Preparation.
 
+2025.004  Thu Apr 24 2025
+!Preparation.xs
+!data/precis_preparation.pl
+!lib/POD2/JA/Unicode/Precis/Preparation.pod
+!lib/Unicode/Precis/Preparation.pm
+!ppport.h
+!precis_preparation.c
+!precis_preparation.h
+!t/01utf8.t
+  - Fix: CPAN RT #164343: Unable to work with Unicode 16; tests will fail
+    with perl-5.42
+  - Applied Unicode 16.0.0.
+  - Small updates on docs.
+
 0.999_01  Sat Mar 24 2018
 ! README
 ! data/makefile
