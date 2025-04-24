@@ -117,7 +117,7 @@ sub build_age_map {
             if defined $age[2];
 
         # Differences by 2.0 and later were tracked by UC.
-        $PROPS[$c] = sprintf '0x%x%x', @age
+        $PROPS[$c] = sprintf '0x%02x%02x', @age
             if 2 <= $age[0];
     }
 

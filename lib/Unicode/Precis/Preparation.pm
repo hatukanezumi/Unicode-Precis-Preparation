@@ -44,7 +44,7 @@ sub prepare {
         split /[.]/, ($options{UnicodeVersion} || $UnicodeVersion);
     $unicode_minor ||= 0;
 
-    _prepare($string, $stringclass, ($unicode_major << 4) + $unicode_minor);
+    _prepare($string, $stringclass, ($unicode_major << 8) + $unicode_minor);
 }
 
 1;

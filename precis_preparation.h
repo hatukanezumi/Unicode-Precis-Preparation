@@ -29,5 +29,5 @@ typedef enum {
     PRECIS_DISALLOWED
 } precis_prop_t;
 
-extern int precis_prepare(U8 *, const STRLEN, int, U8, U8 **, STRLEN *,
+extern int precis_prepare(U8 *, const STRLEN, int, U16, U8 **, STRLEN *,
 			  STRLEN *, U32 *);
